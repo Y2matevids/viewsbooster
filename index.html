@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Views Booster</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+
+        .video-container {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-gap: 10px;
+            margin-top: 20px;
+        }
+
+        .mobile-iframe {
+            width: 100%;
+            height: 300px;
+            border: none;
+            border-radius: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin-top: 20px;
+            cursor: pointer;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        @media (max-width: 768px) {
+            .video-container {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            iframe {
+                height: 200px;
+            }
+
+            button {
+                width: 100%;
+                font-size: 18px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .video-container {
+                grid-template-columns: 1fr;
+            }
+
+            iframe {
+                height: 150px;
+            }
+
+            button {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Views Booster</h1>
+    <p>Boost your YouTube views by watching videos simultaneously.</p>
+    <p>Paste a YouTube video link below:</p>
+    <input type="text" id="videoUrl" placeholder="Enter YouTube Video URL" size="50">
+    <button onclick="generateFrames()">Generate Frames</button>
+
+    <div class="video-container" id="videoContainer"></div>
+
+    <button id="playButton" style="display:none;" onclick="playVideos()">Play All Videos</button>
+
+    <script>
+        function generateFrames() {
+            let url = document.getElementById("videoUrl").value;
+            if (!url) {
+                alert("Please enter a YouTube video URL.");
+                return;
+            }
+
+            const videoId = extractVideoId(url);
+            if (!videoId) {
+                alert("Invalid YouTube URL.");
+                return;
+            }
+
+            document.getElementById("videoContainer").innerHTML = "";
+
+            // Create 20 video frames with lazy loading
+            for (let i = 0; i < 20; i++) {
+                const iframe = document.createElement("iframe");
+                iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=0&vq=small`;
+                iframe.setAttribute("allow", "autoplay; encrypted-media");
+                iframe.setAttribute("loading", "lazy"); // Lazy load attribute
+                iframe.classList.add("mobile-iframe");
+                iframe.id = `iframe${i}`; // Set unique ID for each iframe
+                document.getElementById("videoContainer").appendChild(iframe);
+            }
+
+            document.getElementById("playButton").style.display = "block";
+        }
+
+        function extractVideoId(url) {
+            const regex = /(?:https?:\/\/(?:www\.)?youtube\.com(?:\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|(?:watch\?v=|v\/|\S*?[?&]v=))([a-zA-Z0-9_-]{11})\S*))/;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+        }
+
+        function playVideos() {
+            const iframes = document.querySelectorAll("iframe");
+            iframes.forEach(iframe => {
+                // Ensure autoplay is triggered by updating the iframe's src
+                let src = iframe.src;
+                if (!src.includes("autoplay=1")) {
+                    iframe.src = src.replace("autoplay=0", "autoplay=1");
+                }
+
+                iframe.onload = function() {
+                    // Start monitoring the video playback time once it's loaded
+                    monitorVideoPlayback(iframe);
+                };
+            });
+        }
+
+        // Function to monitor the playback time of each video
+        function monitorVideoPlayback(iframe) {
+            const videoPlayer = iframe.contentWindow.document.querySelector('video');
+            if (videoPlayer) {
+                // Monitor the video playback every second
+                const interval = setInterval(() => {
+                    if (videoPlayer.currentTime >= 35) {
+                        // Restart the video after 35 seconds
+                        videoPlayer.currentTime = 0;
+                        videoPlayer.play(); // Restart and play the video
+                    }
+                }, 1000); // Check every second
+            }
+        }
+    </script>
+</body>
+</html>
