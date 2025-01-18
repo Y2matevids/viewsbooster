@@ -82,6 +82,8 @@
     <button id="playButton" style="display:none;" onclick="playVideos()">Play All Videos</button>
 
     <script>
+        let players = [];
+
         function generateFrames() {
             let url = document.getElementById("videoUrl").value;
             if (!url) {
@@ -100,7 +102,7 @@
             // Create 20 video frames with lazy loading
             for (let i = 0; i < 20; i++) {
                 const iframe = document.createElement("iframe");
-                iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=0&vq=small`;
+                iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=0&vq=small&enablejsapi=1`;
                 iframe.setAttribute("allow", "autoplay; encrypted-media");
                 iframe.setAttribute("loading", "lazy"); // Lazy load attribute
                 iframe.classList.add("mobile-iframe");
@@ -117,36 +119,39 @@
             return match ? match[1] : null;
         }
 
-        function playVideos() {
+        function onYouTubeIframeAPIReady() {
             const iframes = document.querySelectorAll("iframe");
-            iframes.forEach(iframe => {
-                // Ensure autoplay is triggered by updating the iframe's src
-                let src = iframe.src;
-                if (!src.includes("autoplay=1")) {
-                    iframe.src = src.replace("autoplay=0", "autoplay=1");
-                }
-
-                iframe.onload = function() {
-                    // Start monitoring the video playback time once it's loaded
-                    monitorVideoPlayback(iframe);
-                };
+            iframes.forEach((iframe, index) => {
+                const player = new YT.Player(iframe, {
+                    events: {
+                        'onReady': function(event) {
+                            players.push(event.target);
+                        }
+                    }
+                });
             });
         }
 
-        // Function to monitor the playback time of each video
-        function monitorVideoPlayback(iframe) {
-            const videoPlayer = iframe.contentWindow.document.querySelector('video');
-            if (videoPlayer) {
-                // Monitor the video playback every second
-                const interval = setInterval(() => {
-                    if (videoPlayer.currentTime >= 35) {
-                        // Restart the video after 35 seconds
-                        videoPlayer.currentTime = 0;
-                        videoPlayer.play(); // Restart and play the video
-                    }
-                }, 1000); // Check every second
-            }
+        function playVideos() {
+            players.forEach(player => {
+                player.playVideo();
+                monitorVideo(player);
+            });
         }
+
+        function monitorVideo(player) {
+            const interval = setInterval(() => {
+                if (player.getCurrentTime() >= 35) {
+                    player.seekTo(0); // Restart the video after 35 seconds
+                    player.playVideo(); // Play the video again
+                }
+            }, 1000); // Check every second
+        }
+
+        // Load YouTube IFrame API
+        const script = document.createElement('script');
+        script.src = "https://www.youtube.com/iframe_api";
+        document.body.appendChild(script);
     </script>
 </body>
 </html>
